@@ -31,7 +31,13 @@ cp references/examples/profile.example.yaml <workspace>/profile.yaml
 python3 scripts/db.py init --db <workspace>/data/news.db
 ```
 
-初始化完成后，询问用户是否需要调整画像。
+初始化完成后：
+1. 将工作目录写入用户的 `~/.claude/CLAUDE.md`，追加一行：
+   ```
+   - daily-news skill 的项目目录在：<workspace>
+   ```
+   这样后续新会话无需再询问目录位置。
+2. 询问用户是否需要调整画像。
 
 ---
 
