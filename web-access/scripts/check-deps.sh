@@ -14,16 +14,22 @@ else
   echo "node: missing"
 fi
 
-# Chrome 调试端口
-if curl -s --connect-timeout 1 "http://127.0.0.1:9222/json/version" 2>/dev/null | grep -q "Browser"; then
+# Chrome 调试端口（9222）— 用 WebSocket 探测，与 proxy 一致
+# chrome://inspect 方式开启调试时只有 WebSocket，没有 HTTP API
+if node -e "const ws=new WebSocket('ws://127.0.0.1:9222/devtools/browser');ws.onopen=()=>{console.log('ok');process.exit(0)};ws.onerror=()=>process.exit(1);setTimeout(()=>process.exit(1),2000)" 2>/dev/null; then
   echo "chrome: ok (port 9222)"
 else
   echo "chrome: not connected — 请打开 chrome://inspect/#remote-debugging 并勾选 Allow remote debugging"
 fi
 
 # CDP Proxy
-if curl -s --connect-timeout 1 "http://127.0.0.1:3456/health" 2>/dev/null | grep -q '"ok"'; then
-  echo "proxy: running"
+HEALTH=$(curl -s --connect-timeout 2 "http://127.0.0.1:3456/health" 2>/dev/null)
+if echo "$HEALTH" | grep -q '"ok"'; then
+  if echo "$HEALTH" | grep -q '"connected":true'; then
+    echo "proxy: running (chrome connected)"
+  else
+    echo "proxy: running (chrome disconnected)"
+  fi
 else
   echo "proxy: not running"
 fi

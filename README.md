@@ -29,7 +29,7 @@ cp -R eze-skills/daily-news ~/.claude/skills/
 
 | Skill | 简介 | 触发方式 |
 |-------|------|---------|
-| [web-access](./web-access) | v2.1 — CDP Proxy 直连用户 Chrome，零依赖浏览器自动化 | 自动触发 |
+| [web-access](./web-access) | v2.2 — CDP Proxy 直连用户 Chrome，WebSocket 直连 + 真实鼠标点击 + 文件上传 | 自动触发 |
 | [web-access-v1](./web-access-v1) | v1 — 基于 agent-browser 的独立 Chrome 实例方案（稳定备份） | 自动触发 |
 | [daily-news](./daily-news) | 每日资讯日报生成器，支持自定义信源 | 自动触发 |
 
@@ -37,7 +37,7 @@ cp -R eze-skills/daily-news ~/.claude/skills/
 
 ## web-access (v2)
 
-以**「像人一样思考，高效完成任务」**为核心理念，补全 Claude Code 的联网操作链路。v2.1 重构了浏览哲学和工具选择逻辑，通过 CDP Proxy 直连用户日常 Chrome，天然携带登录态。
+以**「像人一样思考，高效完成任务」**为核心理念，补全 Claude Code 的联网操作链路。v2.2 新增 WebSocket 直连、真实鼠标点击、文件上传能力。
 
 联网工具按场景选择（非固定优先级）：
 
@@ -47,7 +47,13 @@ cp -R eze-skills/daily-news ~/.claude/skills/
 4. **Jina** — 可选预处理层，网页转 Markdown，节省 token
 5. **CDP Proxy** — 需要登录态、交互操作、或反爬严格的平台
 
-相比 v1 的优势：
+v2.2 新增：
+- **WebSocket 直连** — 去掉 HTTP `/json/version` 中间层，兼容 `chrome://inspect` 方式开启调试
+- **`/clickAt`** — CDP `Input.dispatchMouseEvent` 真实鼠标点击，能触发文件对话框
+- **`/setFiles`** — `DOM.setFileInputFiles` 直接设置文件路径，绕过文件对话框上传
+- **站点经验积累** — 按域名存储操作经验，跨 session 复用
+
+核心优势：
 - **Token 消耗降至 1/5~1/8**（curl HTTP API vs agent-browser CLI）
 - **速度最快**（直连 Chrome，无中间层）
 - **并发安全**（多 agent 共享一个 proxy，tab 级别隔离，无竞态）

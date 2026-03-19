@@ -57,9 +57,21 @@ curl -s -X POST "http://localhost:3456/eval?target=ID" -d 'document.title'
 ```
 
 ### POST /click?target=ID
-点击元素，POST body 为 CSS 选择器。自动 scrollIntoView 后点击。
+JS 层面点击（`el.click()`），POST body 为 CSS 选择器。自动 scrollIntoView 后点击。简单快速，覆盖大多数场景。
 ```bash
 curl -s -X POST "http://localhost:3456/click?target=ID" -d 'button.submit'
+```
+
+### POST /clickAt?target=ID
+CDP 浏览器级真实鼠标点击（`Input.dispatchMouseEvent`），POST body 为 CSS 选择器。先获取元素坐标，再模拟鼠标按下/释放。算真实用户手势，能触发文件对话框、绕过部分反自动化检测。
+```bash
+curl -s -X POST "http://localhost:3456/clickAt?target=ID" -d 'button.upload'
+```
+
+### POST /setFiles?target=ID
+给 file input 设置本地文件路径（`DOM.setFileInputFiles`），完全绕过文件对话框。POST body 为 JSON。
+```bash
+curl -s -X POST "http://localhost:3456/setFiles?target=ID" -d '{"selector":"input[type=file]","files":["/path/to/file1.png","/path/to/file2.png"]}'
 ```
 
 ### GET /scroll?target=ID&y=3000&direction=down
@@ -87,7 +99,7 @@ curl -s "http://localhost:3456/screenshot?target=ID&file=/tmp/shot.png"
 
 | 错误 | 原因 | 解决 |
 |------|------|------|
-| `Chrome 未开启远程调试端口` | Chrome 没有用 `--remote-debugging-port` 启动 | 提示用户重启 Chrome |
+| `Chrome 未开启远程调试端口` | Chrome 未开启远程调试 | 提示用户打开 `chrome://inspect/#remote-debugging` 并勾选 Allow |
 | `attach 失败` | targetId 无效或 tab 已关闭 | 用 `/targets` 获取最新列表 |
 | `CDP 命令超时` | 页面长时间未响应 | 重试或检查 tab 状态 |
 | `端口已被占用` | 另一个 proxy 已在运行 | 已有实例可直接复用 |

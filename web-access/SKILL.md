@@ -35,7 +35,7 @@ bash ~/.claude/skills/web-access/scripts/check-deps.sh
 
 **② 选择起点** — 根据任务性质、平台特征、达成条件，选一个最可能直达的方式作为第一步去验证。一次成功当然最好；不成功则在③中调整。比如，需要操作页面、需要登录态、已知静态方式不可达的平台（小红书、微信公众号等）→ 直接 CDP
 
-**③ 过程校验** — 每一步拿到结果后对照①的成功标准：路径在推进吗？发现方向错了（需要登录、内容不在这个页面、工具选错了）立即调整，不在同一个错误方式上反复重试。弹窗、登录墙、广告等阻碍——判断是否真的挡住了目标：挡住了就处理，没挡住就绕过继续。**UI 交互也是一种可绕过的间接层**：内容可能已经在页面里，交互只是展示手段。
+**③ 过程校验** — 每一步的结果都是证据，不只是成功或失败的二元信号。用结果对照①的成功标准，更新你对目标的判断：路径在推进吗？结果的整体面貌（质量、相关度、量级）是否指向目标可达？发现方向错了立即调整，不在同一个方式上反复重试——搜索没命中不等于"还没找对方法"，也可能是"目标不存在"；API 报错、页面缺少预期元素、重试无改善，都是在告诉你该重新评估方向。遇到弹窗、登录墙等障碍，判断它是否真的挡住了目标：挡住了就处理，没挡住就绕过——内容可能已在页面 DOM 中，交互只是展示手段。
 
 **④ 完成判断** — 对照定义的任务成功标准，确认任务完成后才停止，但也不要过度操作，不为了"完整"而浪费代价。
 
@@ -110,8 +110,14 @@ curl -s "http://localhost:3456/screenshot?target=ID&file=/tmp/shot.png"
 curl -s "http://localhost:3456/navigate?target=ID&url=URL"
 curl -s "http://localhost:3456/back?target=ID"
 
-# 点击（POST body 为 CSS 选择器）
+# 点击（POST body 为 CSS 选择器）— JS el.click()，简单快速，覆盖大多数场景
 curl -s -X POST "http://localhost:3456/click?target=ID" -d 'button.submit'
+
+# 真实鼠标点击 — CDP Input.dispatchMouseEvent，算用户手势，能触发文件对话框
+curl -s -X POST "http://localhost:3456/clickAt?target=ID" -d 'button.upload'
+
+# 文件上传 — 直接设置 file input 的本地文件路径，绕过文件对话框
+curl -s -X POST "http://localhost:3456/setFiles?target=ID" -d '{"selector":"input[type=file]","files":["/path/to/file.png"]}'
 
 # 滚动（触发懒加载）
 curl -s "http://localhost:3456/scroll?target=ID&y=3000"
@@ -204,8 +210,19 @@ curl -s http://localhost:3456/health && pkill -f cdp-proxy.mjs
 
 **找不到官网时**：权威媒体的原创报道（非转载）可作为次级依据，但需向用户说明："未找到官方原文，以下核实来自[媒体名]报道，存在转述误差可能。"单一来源时同样向用户声明。
 
+## 站点经验
+
+操作中积累的特定网站经验，按域名存储在 `references/site-patterns/` 下。
+
+已有经验的站点：!`ls ${CLAUDE_SKILL_DIR}/references/site-patterns/ 2>/dev/null | sed 's/\.md$//' || echo "暂无"`
+
+确定目标网站后，如果上方列表中有匹配的站点，必须读取对应文件获取先验知识（平台特征、有效模式、已知陷阱）。经验内容标注了发现日期，当作可能有效的提示而非保证——如果按经验操作失败，回退通用模式并更新经验文件。
+
+CDP 操作成功完成后，如果发现了有必要记录经验的新站点或新模式（URL 结构、平台特征、操作策略），主动写入对应的站点经验文件。只写经过验证的事实，不写未确认的猜测。
+
 ## References 索引
 
 | 文件 | 何时加载 |
 |------|---------|
 | `references/cdp-api.md` | 需要 CDP API 详细参考、JS 提取模式、错误处理时 |
+| `references/site-patterns/{domain}.md` | 确定目标网站后，读取对应站点经验 |

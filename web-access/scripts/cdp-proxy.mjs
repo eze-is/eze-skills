@@ -89,40 +89,30 @@ async function discoverChromePort() {
   return null;
 }
 
+// 直接用 WebSocket 探测端口——所有 CDP 操作都走 WebSocket，HTTP API 不可靠
+// （chrome://inspect 方式开启调试时只有 WebSocket，没有 HTTP /json/version）
 function checkPort(port) {
   return new Promise((resolve) => {
-    const req = http.get(`http://127.0.0.1:${port}/json/version`, { timeout: 1000 }, (res) => {
-      let data = '';
-      res.on('data', (chunk) => data += chunk);
-      res.on('end', () => {
-        try {
-          const info = JSON.parse(data);
-          if (info.webSocketDebuggerUrl || info.Browser) {
-            resolve(true);
-          } else {
-            resolve(false);
-          }
-        } catch { resolve(false); }
-      });
-    });
-    req.on('error', () => resolve(false));
-    req.on('timeout', () => { req.destroy(); resolve(false); });
+    const testWs = new WS(`ws://127.0.0.1:${port}/devtools/browser`);
+    const timer = setTimeout(() => { try { testWs.close(); } catch {} resolve(false); }, 2000);
+    const onOpen = () => {
+      clearTimeout(timer);
+      try { testWs.close(); } catch {}
+      resolve(true);
+    };
+    const onError = () => { clearTimeout(timer); resolve(false); };
+    if (testWs.on) {
+      testWs.on('open', onOpen);
+      testWs.on('error', onError);
+    } else {
+      testWs.onopen = onOpen;
+      testWs.onerror = onError;
+    }
   });
 }
 
-async function getWebSocketUrl(chromePort) {
-  return new Promise((resolve, reject) => {
-    http.get(`http://127.0.0.1:${chromePort}/json/version`, { timeout: 3000 }, (res) => {
-      let data = '';
-      res.on('data', (chunk) => data += chunk);
-      res.on('end', () => {
-        try {
-          const info = JSON.parse(data);
-          resolve(info.webSocketDebuggerUrl);
-        } catch (e) { reject(e); }
-      });
-    }).on('error', reject);
-  });
+function getWebSocketUrl(chromePort) {
+  return `ws://127.0.0.1:${chromePort}/devtools/browser`;
 }
 
 // --- WebSocket 连接管理 ---
@@ -366,6 +356,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     // POST /click?target=xxx - 点击（body 为 CSS 选择器）
+    // POST /click?target=xxx — JS 层面点击（简单快速，覆盖大多数场景）
     else if (pathname === '/click') {
       const sid = await ensureSession(q.target);
       const selector = await readBody(req);
@@ -398,6 +389,73 @@ const server = http.createServer(async (req, res) => {
       } else {
         res.end(JSON.stringify(resp.result));
       }
+    }
+
+    // POST /clickAt?target=xxx — CDP 浏览器级真实鼠标点击（算用户手势，能触发文件对话框、绕过反自动化检测）
+    else if (pathname === '/clickAt') {
+      const sid = await ensureSession(q.target);
+      const selector = await readBody(req);
+      if (!selector) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ error: 'POST body 需要 CSS 选择器' }));
+        return;
+      }
+      const selectorJson = JSON.stringify(selector);
+      const js = `(() => {
+        const el = document.querySelector(${selectorJson});
+        if (!el) return { error: '未找到元素: ' + ${selectorJson} };
+        el.scrollIntoView({ block: 'center' });
+        const rect = el.getBoundingClientRect();
+        return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, tag: el.tagName, text: (el.textContent || '').slice(0, 100) };
+      })()`;
+      const coordResp = await sendCDP('Runtime.evaluate', {
+        expression: js,
+        returnByValue: true,
+        awaitPromise: true,
+      }, sid);
+      const coord = coordResp.result?.result?.value;
+      if (!coord || coord.error) {
+        res.statusCode = 400;
+        res.end(JSON.stringify(coord || coordResp.result));
+        return;
+      }
+      await sendCDP('Input.dispatchMouseEvent', {
+        type: 'mousePressed', x: coord.x, y: coord.y, button: 'left', clickCount: 1
+      }, sid);
+      await sendCDP('Input.dispatchMouseEvent', {
+        type: 'mouseReleased', x: coord.x, y: coord.y, button: 'left', clickCount: 1
+      }, sid);
+      res.end(JSON.stringify({ clicked: true, x: coord.x, y: coord.y, tag: coord.tag, text: coord.text }));
+    }
+
+    // POST /setFiles?target=xxx — 给 file input 设置本地文件（绕过文件对话框）
+    // body: JSON { "selector": "input[type=file]", "files": ["/path/to/file1.png", "/path/to/file2.png"] }
+    else if (pathname === '/setFiles') {
+      const sid = await ensureSession(q.target);
+      const body = JSON.parse(await readBody(req));
+      if (!body.selector || !body.files) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ error: '需要 selector 和 files 字段' }));
+        return;
+      }
+      // 获取 DOM 节点
+      await sendCDP('DOM.enable', {}, sid);
+      const doc = await sendCDP('DOM.getDocument', {}, sid);
+      const node = await sendCDP('DOM.querySelector', {
+        nodeId: doc.result.root.nodeId,
+        selector: body.selector
+      }, sid);
+      if (!node.result?.nodeId) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ error: '未找到元素: ' + body.selector }));
+        return;
+      }
+      // 设置文件
+      await sendCDP('DOM.setFileInputFiles', {
+        nodeId: node.result.nodeId,
+        files: body.files
+      }, sid);
+      res.end(JSON.stringify({ success: true, files: body.files.length }));
     }
 
     // GET /scroll?target=xxx&y=3000 - 滚动
