@@ -2,16 +2,18 @@
 
 给 Claude Code 装上完整联网能力的 skill。
 
-Claude Code 原本就有 WebSearch、WebFetch、Playwright MCP，但没有调度策略——不知道什么时候该用哪个，也没有激活 CDP 登录态复用这个最强能力。这个 skill 补上的正是这一层：**策略 + 解锁**。
+Claude Code 原本有 WebSearch、WebFetch，但缺少调度策略和浏览器自动化能力。这个 skill 补上的是：**联网策略 + CDP 浏览器操作 + 站点经验积累**。
 
-## 能力
+## v2.2 能力
 
 | 能力 | 说明 |
 |------|------|
-| 三层通道自动调度 | WebSearch → Jina/WebFetch → 浏览器 CDP，自主选择最轻的直达方案 |
-| 浏览器 CDP 模式 | 直连用户日常 Chrome，天然携带登录态，支持动态页面、交互操作、视频截帧 |
-| 并行分治 | 多目标时主 Agent 分发子 Agent 并行执行，总耗时 ≈ 单个子任务时长 |
-| 图片 / 视频提取 | 从 DOM 直取媒体 URL，或对视频任意时间点截帧分析 |
+| 联网工具自动选择 | WebSearch / WebFetch / curl / Jina / CDP，按场景自主判断，可任意组合 |
+| CDP Proxy 浏览器操作 | 直连用户日常 Chrome，天然携带登录态，支持动态页面、交互操作、视频截帧 |
+| 三种点击方式 | `/click`（JS click）、`/clickAt`（CDP 真实鼠标事件）、`/setFiles`（文件上传） |
+| 并行分治 | 多目标时分发子 Agent 并行执行，共享一个 Proxy，tab 级隔离 |
+| 站点经验积累 | 按域名存储操作经验（URL 模式、平台特征、已知陷阱），跨 session 复用 |
+| 媒体提取 | 从 DOM 直取图片/视频 URL，或对视频任意时间点截帧分析 |
 
 ## 安装
 
@@ -29,15 +31,35 @@ git clone https://github.com/eze-is/web-access ~/.claude/skills/web-access
 
 ## 前置配置（CDP 模式）
 
-CDP 模式需要 Node.js 22+ 和 Chrome 开启远程调试：
+CDP 模式需要 **Node.js 22+** 和 Chrome 开启远程调试：
 
 1. Chrome 地址栏打开 `chrome://inspect/#remote-debugging`
-2. 勾选 **Allow remote debugging for this browser instance**（可能需要重启）
+2. 勾选 **Allow remote debugging for this browser instance**（可能需要重启浏览器）
 
 运行环境检查：
 
 ```bash
 bash ~/.claude/skills/web-access/scripts/check-deps.sh
+```
+
+## CDP Proxy API
+
+Proxy 通过 WebSocket 直连 Chrome（兼容 `chrome://inspect` 方式，无需命令行参数启动），提供 HTTP API：
+
+```bash
+# 启动（20 分钟无请求自动退出）
+node ~/.claude/skills/web-access/scripts/cdp-proxy.mjs &
+
+# 页面操作
+curl -s "http://localhost:3456/new?url=https://example.com"     # 新建 tab
+curl -s -X POST "http://localhost:3456/eval?target=ID" -d 'document.title'  # 执行 JS
+curl -s -X POST "http://localhost:3456/click?target=ID" -d 'button.submit'  # JS 点击
+curl -s -X POST "http://localhost:3456/clickAt?target=ID" -d '.upload-btn'  # 真实鼠标点击
+curl -s -X POST "http://localhost:3456/setFiles?target=ID" \
+  -d '{"selector":"input[type=file]","files":["/path/to/file.png"]}'        # 文件上传
+curl -s "http://localhost:3456/screenshot?target=ID&file=/tmp/shot.png"     # 截图
+curl -s "http://localhost:3456/scroll?target=ID&direction=bottom"           # 滚动
+curl -s "http://localhost:3456/close?target=ID"                             # 关闭 tab
 ```
 
 ## 使用
@@ -46,8 +68,15 @@ bash ~/.claude/skills/web-access/scripts/check-deps.sh
 
 - "帮我搜索 xxx 最新进展"
 - "读一下这个页面：[URL]"
-- "抓取小红书上关于 xxx 的评论"
+- "去小红书搜索 xxx 的账号"
+- "帮我在创作者平台发一篇图文"
 - "同时调研这 5 个产品的官网，给我对比摘要"
+
+## 设计哲学
+
+> Skill = 哲学 + 技术事实，不是操作手册。讲清 tradeoff 让 AI 自己选，不替它推理。
+
+详见 [SKILL.md](./SKILL.md) 中的浏览哲学部分。
 
 ## License
 
