@@ -29,7 +29,7 @@ cp -R eze-skills/daily-news ~/.claude/skills/
 
 | Skill | 简介 | 触发方式 |
 |-------|------|---------|
-| [web-access](./web-access) | v2 — CDP Proxy 直连用户 Chrome，零依赖浏览器自动化 | 自动触发 |
+| [web-access](./web-access) | v2.1 — CDP Proxy 直连用户 Chrome，零依赖浏览器自动化 | 自动触发 |
 | [web-access-v1](./web-access-v1) | v1 — 基于 agent-browser 的独立 Chrome 实例方案（稳定备份） | 自动触发 |
 | [daily-news](./daily-news) | 每日资讯日报生成器，支持自定义信源 | 自动触发 |
 
@@ -37,14 +37,15 @@ cp -R eze-skills/daily-news ~/.claude/skills/
 
 ## web-access (v2)
 
-以**「像人一样浏览」**为核心理念，补全 Claude Code 的联网操作链路。v2 通过 CDP Proxy 直连用户日常 Chrome，天然携带登录态，无需启动独立浏览器。
+以**「像人一样思考，高效完成任务」**为核心理念，补全 Claude Code 的联网操作链路。v2.1 重构了浏览哲学和工具选择逻辑，通过 CDP Proxy 直连用户日常 Chrome，天然携带登录态。
 
-遇到联网任务时自动按代价从低到高选择方式：
+联网工具按场景选择（非固定优先级）：
 
-1. **WebSearch** — 只需搜索结果，最轻量
-2. **Jina**（默认）— 底层执行 JS 渲染，提取正文为 Markdown，支持 SPA、PDF
-3. **WebFetch** — 直接获取原始 HTML（不执行 JS），用于读取结构化字段（meta、JSON-LD 等）
-4. **CDP Proxy** — 通过轻量 HTTP API 操控用户 Chrome，支持 eval、click、scroll、screenshot 等
+1. **WebSearch** — 搜索摘要或发现信息来源
+2. **WebFetch** — URL 已知，定向提取页面信息（内置小模型处理）
+3. **curl** — 需要原始 HTML 源码（meta、JSON-LD 等结构化字段）
+4. **Jina** — 可选预处理层，网页转 Markdown，节省 token
+5. **CDP Proxy** — 需要登录态、交互操作、或反爬严格的平台
 
 相比 v1 的优势：
 - **Token 消耗降至 1/5~1/8**（curl HTTP API vs agent-browser CLI）
