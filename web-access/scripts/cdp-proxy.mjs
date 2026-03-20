@@ -89,25 +89,14 @@ async function discoverChromePort() {
   return null;
 }
 
-// 直接用 WebSocket 探测端口——所有 CDP 操作都走 WebSocket，HTTP API 不可靠
-// （chrome://inspect 方式开启调试时只有 WebSocket，没有 HTTP /json/version）
+// 用 TCP 探测端口是否监听——避免 WebSocket 连接触发 Chrome 安全弹窗
+// （WebSocket 探测会被 Chrome 视为调试连接，弹出授权对话框）
 function checkPort(port) {
   return new Promise((resolve) => {
-    const testWs = new WS(`ws://127.0.0.1:${port}/devtools/browser`);
-    const timer = setTimeout(() => { try { testWs.close(); } catch {} resolve(false); }, 2000);
-    const onOpen = () => {
-      clearTimeout(timer);
-      try { testWs.close(); } catch {}
-      resolve(true);
-    };
-    const onError = () => { clearTimeout(timer); resolve(false); };
-    if (testWs.on) {
-      testWs.on('open', onOpen);
-      testWs.on('error', onError);
-    } else {
-      testWs.onopen = onOpen;
-      testWs.onerror = onError;
-    }
+    const socket = net.createConnection(port, '127.0.0.1');
+    const timer = setTimeout(() => { socket.destroy(); resolve(false); }, 2000);
+    socket.once('connect', () => { clearTimeout(timer); socket.destroy(); resolve(true); });
+    socket.once('error', () => { clearTimeout(timer); resolve(false); });
   });
 }
 

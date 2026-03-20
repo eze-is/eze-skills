@@ -53,7 +53,7 @@ bash ~/.claude/skills/web-access/scripts/check-deps.sh
 
 浏览器 CDP 不要求 URL 已知——可从任意入口出发，通过页面内搜索、点击、跳转等方式找到目标内容。WebSearch、WebFetch、curl 均不处理登录态。
 
-**Jina**（可选预处理层，常与 WebFetch/curl 组合使用）：网络服务，将网页转为 Markdown，大幅节省 token 但可能有信息损耗。调用方式为 `r.jina.ai/example.com`（URL 前加前缀，不保留原网址 http 前缀），限 20 RPM。适合文章、博客、文档、PDF 等以正文为核心的页面；对数据面板、商品页等非文章结构页面可能提取到错误区块。
+**Jina**（可选预处理层，可与 WebFetch/curl 组合使用，由于其特性可节省 tokens 消耗，请积极在任务合适时组合使用）：第三方网络服务，可将网页转为 Markdown，大幅节省 token 但可能有信息损耗。调用方式为 `r.jina.ai/example.com`（URL 前加前缀，不保留原网址 http 前缀），限 20 RPM。适合文章、博客、文档、PDF 等以正文为核心的页面；对数据面板、商品页等非文章结构页面可能提取到错误区块。
 
 进入浏览器层后，`/eval` 就是你的眼睛和手：
 
@@ -80,11 +80,10 @@ bash ~/.claude/skills/web-access/scripts/check-deps.sh
 ### 启动
 
 ```bash
-# 确保 proxy 运行（已运行则跳过，未运行则启动）
-if ! curl -s http://localhost:3456/health 2>/dev/null | grep -q '"ok"'; then node ~/.claude/skills/web-access/scripts/cdp-proxy.mjs > /tmp/cdp-proxy.log 2>&1 & sleep 1; fi
+bash ~/.claude/skills/web-access/scripts/check-deps.sh
 ```
 
-Proxy 20 分钟无请求自动退出，下次需要时重新启动即可。`/health` 返回 `connected: false` 时说明 Chrome 未连接，需提示用户检查。
+脚本会依次检查 Node.js、Chrome 端口，并确保 Proxy 已连接（未运行则自动启动并等待）。Proxy 20 分钟无请求自动退出，下次重新运行脚本即可。
 
 ### Proxy API
 
@@ -178,14 +177,11 @@ curl -s http://localhost:3456/health && pkill -f cdp-proxy.mjs
 - **速度**：多子 Agent 并行，总耗时约等于单个子任务时长
 - **上下文保护**：抓取内容不进入主 Agent 上下文，主 Agent 只接收摘要，节省 token
 
-**子 Agent 需继承 skill：**
-在子 Agent prompt 中写 `遵循 web-access skill 的指引` 即可，子 Agent 会自动加载 skill，无需在 prompt 中复制 skill 内容或指定路径。
-
 **并行 CDP 操作**：每个子 Agent 在当前用户浏览器实例中，自行创建所需的后台 tab（`/new`），自行操作，任务结束自行关闭（`/close`）。所有子 Agent 共享一个 Chrome、一个 Proxy，通过不同 targetId 操作不同 tab，无竞态风险。
 
 **子 Agent Prompt 写法：目标导向，而非步骤指令**
-
-子 Agent 有完整的 skill 知识和自主判断能力。主 Agent 的职责是说清楚**要什么**，仅在必要与确信时限定**怎么做**。过度指定步骤会剥夺子 Agent 的判断空间，反而引入主 Agent 的假设错误。
+- 必须在子 Agent prompt 中写 `必须加载 web-access skill 并遵循指引` ，子 Agent 会自动加载 skill，无需在 prompt 中复制 skill 内容或指定路径。
+- 子 Agent 有自主判断能力。主 Agent 的职责是说清楚**要什么**，仅在必要与确信时限定**怎么做**。过度指定步骤会剥夺子 Agent 的判断空间，反而引入主 Agent 的假设错误。**避免 prompt 用词对子 Agent 行为的暗示**：「搜索xx」会把子 Agent 锚定到 WebSearch，而实际上有些反爬站点需要 CDP 直接访问主站才能有效获取内容。主 Agent 写 prompt 时应描述目标（「获取」「调研」「了解」），避免用暗示具体手段的动词（「搜索」「抓取」「爬取」）。
 
 **分治判断标准：**
 
