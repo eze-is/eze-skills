@@ -7,19 +7,11 @@
 ## Install
 
 ```bash
-# 通过 Claude Code 插件市场安装
-/plugin marketplace add eze-is/eze-skills
+# 安装 web-access（最新版，独立仓库）
+git clone https://github.com/eze-is/web-access.git ~/.claude/skills/web-access
 
-# 安装单个 skill
-/plugin install web-access@eze-skills
-/plugin install daily-news@eze-skills
-```
-
-或手动 clone：
-
-```bash
+# 安装 daily-news
 git clone https://github.com/eze-is/eze-skills.git
-cp -R eze-skills/web-access ~/.claude/skills/
 cp -R eze-skills/daily-news ~/.claude/skills/
 ```
 
@@ -29,47 +21,19 @@ cp -R eze-skills/daily-news ~/.claude/skills/
 
 | Skill | 简介 | 触发方式 |
 |-------|------|---------|
-| [web-access](./web-access) | v2.3 — CDP Proxy 直连用户 Chrome，浏览哲学重构 + Jina 积极推荐 + 子 Agent prompt 指引优化 | 自动触发 |
-| [web-access-v1](./web-access-v1) | v1 — 基于 agent-browser 的独立 Chrome 实例方案（稳定备份） | 自动触发 |
+| [web-access](https://github.com/eze-is/web-access) ↗ | v2+ — CDP Proxy 直连用户 Chrome，完整联网策略。**已迁移到独立仓库** | 自动触发 |
+| [web-access-v1](./web-access-v1) | v1 — 基于 agent-browser 的独立 Chrome 实例方案（历史存档） | 自动触发 |
 | [daily-news](./daily-news) | 每日资讯日报生成器，支持自定义信源 | 自动触发 |
 
 ---
 
-## web-access (v2)
+## web-access (v2+)
 
-以**「像人一样思考，高效完成任务」**为核心理念，补全 Claude Code 的联网操作链路。
+> **最新版已迁移到独立仓库：[eze-is/web-access](https://github.com/eze-is/web-access)**
+>
+> 本仓库不再同步 web-access 新版本，请前往独立仓库获取。
 
-联网工具按场景选择（非固定优先级）：
-
-1. **WebSearch** — 搜索摘要或发现信息来源
-2. **WebFetch** — URL 已知，定向提取页面信息（内置小模型处理）
-3. **curl** — 需要原始 HTML 源码（meta、JSON-LD 等结构化字段）
-4. **Jina** — 可选预处理层，第三方网络服务将网页转为 Markdown，节省 token，任务合适时积极组合使用
-5. **CDP Proxy** — 需要登录态、交互操作、或反爬严格的平台
-
-v2.3 更新：
-- **浏览哲学重构** — 更清晰的「像人一样思考」框架，强调目标驱动而非步骤驱动
-- **Jina 积极推荐** — 明确鼓励在合适场景主动使用 Jina 节省 token
-- **子 Agent prompt 指引优化** — 明确加载 skill 的写法，增加避免动词暗示执行方式的说明
-
-v2.2 新增（历史）：
-- **WebSocket 直连** — 去掉 HTTP `/json/version` 中间层，兼容 `chrome://inspect` 方式开启调试
-- **`/clickAt`** — CDP `Input.dispatchMouseEvent` 真实鼠标点击，能触发文件对话框
-- **`/setFiles`** — `DOM.setFileInputFiles` 直接设置文件路径，绕过文件对话框上传
-- **站点经验积累** — 按域名存储操作经验，跨 session 复用
-
-核心优势：
-- **Token 消耗降至 1/5~1/8**（curl HTTP API vs agent-browser CLI）
-- **速度最快**（直连 Chrome，无中间层）
-- **并发安全**（多 agent 共享一个 proxy，tab 级别隔离，无竞态）
-- **零额外依赖**（Node.js 22+ 即可，无需 npm install）
-- **天然登录态**（用户日常 Chrome，无需重复登录）
-
-```bash
-bash ~/.claude/skills/web-access/scripts/check-deps.sh
-```
-
-## web-access-v1（稳定备份）
+## web-access-v1（历史存档）
 
 基于 [agent-browser](https://www.npmjs.com/package/agent-browser) 的方案，启动独立 Chrome 实例，通过 accessibility tree 交互。功能完整，已稳定使用。如果 v2 不适合你的场景，可以使用此版本。
 
