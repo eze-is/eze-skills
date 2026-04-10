@@ -7,10 +7,13 @@
 ## Install
 
 ```bash
-# 安装 web-access（最新版，独立仓库）
+# 安装 web-access（独立仓库）
 git clone https://github.com/eze-is/web-access.git ~/.claude/skills/web-access
 
-# 安装 daily-news
+# 安装 vc-report（独立仓库）
+git clone https://github.com/eze-is/vc-report.git ~/.claude/skills/vc-report
+
+# 安装 daily-news（合集仓库内）
 git clone https://github.com/eze-is/eze-skills.git
 cp -R eze-skills/daily-news ~/.claude/skills/
 ```
@@ -24,7 +27,7 @@ cp -R eze-skills/daily-news ~/.claude/skills/
 | [web-access](https://github.com/eze-is/web-access) ↗ | v2+ — CDP Proxy 直连用户 Chrome，完整联网策略。**已迁移到独立仓库** | 自动触发 |
 | [web-access-v1](./web-access-v1) | v1 — 基于 agent-browser 的独立 Chrome 实例方案（历史存档） | 自动触发 |
 | [daily-news](./daily-news) | 每日资讯日报生成器，支持自定义信源 | 自动触发 |
-| [vc-report](./vc-report) | VC 投资人调研周报/月报助手，profile-driven | "周报"、"调研" |
+| [vc-report](https://github.com/eze-is/vc-report) ↗ | VC 投资人调研周报/月报助手，profile-driven。**独立仓库** | "周报"、"调研" |
 
 ---
 
@@ -61,30 +64,7 @@ cp -R eze-skills/daily-news ~/.claude/skills/
 
 ## vc-report
 
-VC 投资人调研周报/月报助手。把零散的调研素材（链接、关键词、笔记）变成结构化的周报/月报。
-
-核心特性：
-
-- **Profile-driven**：先学习用户的报告风格，再按其习惯输出
-- **两阶段调研**：子 Agent 客观探索（不带偏见）→ 主 Agent 认知碰撞（加载 worldview）
-- **worldview.md**：持续演化的认知框架，每次调研后审视更新
-- **程序化 prompt 组装**：`build-prompt.py` 根据 stage 自动隔离上下文，避免信息泄露
-- **脚注引用**：关键数据标注来源 URL，可溯源
-- **依赖 web-access skill** 做联网调研
-
-工作区结构：
-
-```
-<workspace>/
-├── profile.yaml          # 用户画像 + 报告风格 + 调研偏好
-├── worldview.md          # 持续演化的认知框架
-├── notes.md              # 调研脉络（事实层）
-├── inbox/                # 素材投递入口
-└── reports/              # 每期报告 = 一个子项目
-    └── 2026-W15/
-        ├── research/     # 调研详情（子 Agent 写入）
-        └── output.md     # 最终周报
-```
+> **已迁移到独立仓库：[eze-is/vc-report](https://github.com/eze-is/vc-report)**
 
 ---
 
