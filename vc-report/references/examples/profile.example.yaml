@@ -1,0 +1,82 @@
+# VC Report Profile 示例
+# 此文件由风格学习流程自动生成，用户可手动修改
+
+# 基本信息
+name: "Alice"
+role: "VC 投资人"
+firm: "某基金"
+
+# 关注领域
+domain: "AI 软件"
+focus_areas:
+  - "AI 社交"
+  - "AI 游戏"
+  - "AI Memory"
+  - "端侧模型"
+
+# 报告风格（从样本中学习得到）
+report_style:
+  # 结构模板
+  structure:
+    - section: "Meeting"
+      description: "本周会议，每个项目独立展开"
+      subsections:
+        - "产品规划"
+        - "运营情况"
+        - "团队和融资"
+    - section: "Desktop research"
+      description: "桌面调研：数据分析、论文阅读、产品试用"
+    - section: "Next on"
+      description: "下周计划"
+    - section: "Intriguing references"
+      description: "本周有价值的论文和文章链接"
+
+  # 语言风格
+  tone:
+    - "中英文混用，专业术语用英文（如 DAU、ARR、portfolio）"
+    - "带个人判断和情绪"
+    - "数据尽量精确"
+    - "投资视角：关注商业化路径、融资轮次、竞争壁垒"
+
+  # 信息粒度
+  detail_level:
+    meeting_deep: "按子模块详细展开，每个模块 3-5 个要点"
+    meeting_light: "不展开子模块，2-3 行要点概括"
+    desktop_research: "每个话题 1-3 个子要点，侧重关键发现"
+    next_on: "一行一条"
+    references: "标题 + URL，一行一个"
+
+  # 风格参考片段（从用户样本中摘取的典型表达，以下为示例）
+  sample_snippets:
+    - "产品上线三个月，DAU 从 2w 涨到 12w，但留存只有 15%，商业化还没跑通"
+    - "团队就 4 个人，月 burn 不到 5w 刀，是同阶段里最省的"
+    - "这个方向大家都在做，但还没有谁真正把体验做到位"
+
+# 深度调研风格（单个产品/公司的详细分析报告）
+deep_research_style:
+  structure:
+    - "开头：产品名 + 关键词标签 + 一句话定位（含关键数据）"
+    - "产品分析：长什么样 — 核心玩法到功能演进"
+    - "定位/趋势分析：为什么这样做 — 结合行业背景的判断"
+  writing_style:
+    - "产品名用「」包裹"
+    - "竞品对比自然穿插在分析中，而非单独列表"
+    - "分析段带强判断和归因"
+    - "功能描述具体但不啰嗦：一句话说清是什么 + 亮点"
+
+# 调研偏好（阶段 2 和 output 生成时加载，不在阶段 1 注入）
+research_preferences:
+  perspective: "投资视角，关注战略含义而非技术细节"
+  focus:
+    - "市场机会：这个东西意味着什么新机会？谁会受益？"
+    - "竞争格局变化：现有玩家会怎样？新进入者有什么优势？"
+    - "对已关注赛道/项目的影响"
+    - "商业化路径：怎么赚钱？模式是否成立？"
+  avoid:
+    - "不要堆砌 benchmark 数据——数据只作为判断的佐证"
+    - "不要过度展开技术实现细节——除非技术路线本身是壁垒"
+    - "不要罗列功能清单——说清核心差异化就够"
+  data_citation: "关键数据点必须用脚注标注来源 URL"
+
+# 输出格式
+output_format: "markdown"
